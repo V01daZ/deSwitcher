@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>deSwitcher.Modes</AssemblyName>
+    <RootNamespace>DeSwitcher.Modes</RootNamespace>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GameRefs>..\..\third_party\refs\beta</GameRefs>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
+    <ProjectReference Include="..\Runtime\Runtime.csproj" />
+    <ProjectReference Include="..\Shim\Shim.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp"><HintPath>$(GameRefs)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(GameRefs)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(GameRefs)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(GameRefs)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(GameRefs)\UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(GameRefs)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Newtonsoft.Json"><HintPath>$(GameRefs)\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

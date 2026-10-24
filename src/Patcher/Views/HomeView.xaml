@@ -1,0 +1,60 @@
+<UserControl x:Class="DeSwitcher.Patcher.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid ClipToBounds="True">
+
+        <Canvas>
+            <Ellipse Canvas.Right="-150" Canvas.Top="30" Width="520" Height="520">
+                <Ellipse.Fill>
+                    <RadialGradientBrush GradientOrigin="0.4,0.4" Center="0.4,0.4" RadiusX="0.75" RadiusY="0.75">
+                        <GradientStop Color="#EFEADC" Offset="0"/>
+                        <GradientStop Color="#DCD6C4" Offset="0.72"/>
+                        <GradientStop Color="#CAC3AF" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <Ellipse Canvas.Right="-230" Canvas.Top="-50" Width="680" Height="680" Opacity="0.10">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Color="#E6E1D3" Offset="0.55"/>
+                        <GradientStop Color="#00E6E1D3" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+        </Canvas>
+
+        <Grid Margin="48,44,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <StackPanel>
+                <TextBlock Text="deswitcher" Style="{StaticResource Wordmark}" FontSize="46"/>
+                <TextBlock x:Name="Subtitle" Style="{StaticResource Dimmed}" Margin="2,14,0,0" FontSize="12.5"/>
+                <StackPanel Orientation="Horizontal" Margin="2,34,0,24">
+                    <Ellipse Width="9" Height="9" Fill="{StaticResource Red}" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusLine" Margin="10,0,0,0" FontSize="13.5" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button x:Name="EnableButton" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Click="OnEnable">
+                    <TextBlock x:Name="EnableText"/>
+                </Button>
+                <Button x:Name="PickButton" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnPick">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource Icon}" Width="14" Height="14" VerticalAlignment="Center"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              Data="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+                        <TextBlock x:Name="PickText" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <StackPanel x:Name="Reassure" Margin="2,46,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <Border VerticalAlignment="Bottom" Margin="20,0,20,18" CornerRadius="8" Padding="13,10"
+                Background="#121F23" BorderBrush="#2A4A52" BorderThickness="1"
+                Cursor="Hand" MouseLeftButtonUp="OnBanner">
+            <StackPanel Orientation="Horizontal">
+                <Path Style="{StaticResource Icon}" Width="15" Height="15" Stroke="{StaticResource Cyan}" VerticalAlignment="Center"
+                      Data="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z M9 12 l2 2 4-4"/>
+                <TextBlock x:Name="Banner" Margin="10,0,0,0" FontSize="11.5" Foreground="#CDEFF7" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

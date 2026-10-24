@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>deSwitcher.Boot</AssemblyName>
+    <RootNamespace>DeSwitcher.Boot</RootNamespace>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json"><HintPath>..\..\third_party\refs\beta\Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

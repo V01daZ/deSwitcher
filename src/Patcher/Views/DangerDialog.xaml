@@ -1,0 +1,33 @@
+<UserControl x:Class="DeSwitcher.Patcher.Views.DangerDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Background="#CC060607">
+        <Border Width="520" VerticalAlignment="Center" HorizontalAlignment="Center"
+                Background="#0F0F11" BorderBrush="#8C2A36" BorderThickness="1" CornerRadius="12">
+            <StackPanel>
+                <Border Height="3" CornerRadius="12,12,0,0" Background="#201316">
+                    <Rectangle x:Name="TimerBar" HorizontalAlignment="Left" Fill="{StaticResource Red}" Width="40"/>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="22,18,22,0">
+                    <Path Style="{StaticResource Icon}" Width="30" Height="30" Stroke="{StaticResource Red}" VerticalAlignment="Center"
+                          Data="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z M12 8 v4 M12 16 h.01"/>
+                    <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="Title" FontFamily="{StaticResource Pixel}" FontSize="13" Foreground="#FF8A9B" TextOptions.TextRenderingMode="Aliased"/>
+                        <TextBlock x:Name="ModName" Style="{StaticResource Dimmed}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock x:Name="Body" Margin="22,16,22,0" FontSize="13" Foreground="#CFCBC1" TextWrapping="Wrap" LineHeight="20"/>
+
+                <Border Margin="22,12,22,0" CornerRadius="8" Padding="12,10" Background="#151517" BorderBrush="#232326" BorderThickness="1">
+                    <StackPanel x:Name="Findings"/>
+                </Border>
+
+                <TextBlock x:Name="SiteLine" Margin="22,12,22,0" FontSize="12" Foreground="{StaticResource Dim}"/>
+
+                <StackPanel x:Name="Buttons" Orientation="Horizontal" Margin="22,18,22,20"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

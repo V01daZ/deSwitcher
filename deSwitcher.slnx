@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Boot/Boot.csproj" />
+    <Project Path="src/Compiler/Compiler.csproj" />
+    <Project Path="src/Core/Core.csproj" />
+    <Project Path="src/Legacy/Legacy.csproj" />
+    <Project Path="src/Modes/Modes.csproj" />
+    <Project Path="src/Patcher.Logic/Patcher.Logic.csproj" />
+    <Project Path="src/Patcher/Patcher.csproj" />
+    <Project Path="src/Runtime/Runtime.csproj" />
+    <Project Path="src/Shim/Shim.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Core.Tests/Core.Tests.csproj" />
+    <Project Path="tests/Patcher.Tests/Patcher.Tests.csproj" />
+  </Folder>
+</Solution>

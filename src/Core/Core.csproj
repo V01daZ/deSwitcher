@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>deSwitcher.Core</AssemblyName>
+    <RootNamespace>DeSwitcher.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Core.Tests" />
+  </ItemGroup>
+</Project>

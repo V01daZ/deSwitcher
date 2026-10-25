@@ -19,9 +19,12 @@ namespace DeSwitcher.Patcher
         public MainWindow()
         {
             InitializeComponent();
+            VersionLabel.Text = App.VersionText;
             UpdateLang();
             game = new GameContext(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "payload"));
             bool found = game.Locate();
+            if (found && game.Installed && game.PayloadOutdated())
+                DoPatchOp("--install");
             if (found && game.Installed)
                 RunScan(false);
             else
@@ -101,6 +104,14 @@ namespace DeSwitcher.Patcher
 
         private bool DoPatchOp(string op)
         {
+            if (GameContext.GameRunning())
+            {
+                MessageBox.Show(Loc.Current == Lang.Ru
+                    ? "Закройте People Playground и попробуйте снова."
+                    : "Close People Playground and try again.",
+                    "deSwitcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
             string managed = DeSwitcher.Patcher.Logic.GameLocator.ManagedDir(game.Game);
             try
             {
@@ -241,8 +252,8 @@ namespace DeSwitcher.Patcher
             UpdateLang();
             if (Root.Children.Count > 0 && Root.Children[0] is HomeView)
                 ShowHome(game.Game != null);
-            else
-                ShowDashboard();
+            else if (Root.Children.Count > 0 && Root.Children[0] is DashboardView dash)
+                dash.Localize();
         }
 
         private void OnChromeDrag(object sender, MouseButtonEventArgs e)

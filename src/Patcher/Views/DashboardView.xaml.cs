@@ -132,7 +132,7 @@ namespace DeSwitcher.Patcher.Views
         {
             PageKicker.Text = "";
             PageTitle.Text = Loc.T("nav.settings");
-            PageSub.Text = "deSwitcher 1.0  ·  People Playground " + GameVersion;
+            PageSub.Text = App.VersionText + "  ·  People Playground " + GameVersion;
             ListHost.Children.Add(SettingButton(Loc.T("remove.patch"), () => RemovePatchRequested?.Invoke()));
             ListHost.Children.Add(SettingButton(Loc.T("open.folder"), () => OpenFolderRequested?.Invoke()));
         }

@@ -27,7 +27,7 @@ namespace DeSwitcher.Runtime
             }
 
             string hash = SafeHash(modFolder);
-            string output = Path.Combine(Bootstrap.HomeDir, "Cache", hash + ".dll");
+            string output = Path.Combine(Bootstrap.CacheDir, hash + ".dll");
             byte[] assembly = null;
 
             if (sources != null && sources.Length > 0)

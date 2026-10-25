@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Threading;
 using DeSwitcher.Core;
 
 namespace DeSwitcher.Runtime
@@ -18,9 +19,9 @@ namespace DeSwitcher.Runtime
             lock (Gate)
             {
                 State = GuardState.Load(stateDir);
-                Lists = GuardLists.Load(stateDir, Download);
-                Log.Info("Guard lists: blocklist " + Lists.Blocklist.Hashes.Count + " hashes, catalog " + Lists.Catalog.Mods.Count + " mods, fresh=" + Lists.Fresh);
+                Lists = GuardLists.Load(stateDir, Offline);
             }
+            new Thread(Refresh) { IsBackground = true }.Start();
         }
 
         public static void Trust(string hash)
@@ -32,28 +33,35 @@ namespace DeSwitcher.Runtime
             }
         }
 
+        private static void Refresh()
+        {
+            try
+            {
+                var fresh = GuardLists.Load(StateDir, Download);
+                lock (Gate)
+                    Lists = fresh;
+                Log.Info("Guard lists: blocklist " + fresh.Blocklist.Hashes.Count + " hashes, " + fresh.Blocklist.Names.Count + " names, catalog " + fresh.Catalog.Mods.Count + " mods, fresh=" + fresh.Fresh);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("Guard refresh failed: " + e.Message);
+            }
+        }
+
+        private static byte[] Offline(string url) => throw new IOException("offline");
+
         private static byte[] Download(string url)
         {
-            using (var client = new WebClient())
+            var request = (HttpWebRequest)WebRequest.Create(url);
+            request.UserAgent = "deSwitcher";
+            request.Timeout = 10000;
+            request.ReadWriteTimeout = 10000;
+            using (var response = request.GetResponse())
+            using (var stream = response.GetResponseStream())
+            using (var ms = new MemoryStream())
             {
-                client.Headers[HttpRequestHeader.UserAgent] = "deSwitcher";
-                var done = new System.Threading.ManualResetEvent(false);
-                byte[] result = null;
-                Exception error = null;
-                client.DownloadDataCompleted += (s, e) =>
-                {
-                    if (e.Error != null) error = e.Error; else result = e.Result;
-                    done.Set();
-                };
-                client.DownloadDataAsync(new Uri(url));
-                if (!done.WaitOne(TimeSpan.FromSeconds(5)))
-                {
-                    client.CancelAsync();
-                    throw new TimeoutException(url);
-                }
-                if (error != null)
-                    throw error;
-                return result;
+                stream.CopyTo(ms);
+                return ms.ToArray();
             }
         }
     }

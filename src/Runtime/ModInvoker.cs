@@ -18,24 +18,32 @@ namespace DeSwitcher.Runtime
             if (method == null)
                 return false;
 
-            SetMetadata(metaData, true);
             try
             {
-                method.Invoke(null, null);
+                WithMetadata(metaData, () => method.Invoke(null, null));
             }
             catch (Exception e)
             {
                 Debug.LogError((e as TargetInvocationException)?.InnerException ?? e);
             }
-            SetMetadata(metaData, false);
             return true;
         }
 
-        public static void SetMetadata(object metaData, bool valid)
+        public static void WithMetadata(object metaData, Action action)
         {
-            if (valid)
-                ModApi.Property("Metadata").SetValue(metaData);
-            ModApi.Field("metaDataIsValid").SetValue(valid);
+            object previous = ModApi.Field("metadata").GetValue();
+            bool wasValid = ModApi.Field("metaDataIsValid").GetValue() is bool b && b;
+            ModApi.Field("metadata").SetValue(metaData);
+            ModApi.Field("metaDataIsValid").SetValue(true);
+            try
+            {
+                action();
+            }
+            finally
+            {
+                ModApi.Field("metadata").SetValue(previous);
+                ModApi.Field("metaDataIsValid").SetValue(wasValid);
+            }
         }
     }
 }

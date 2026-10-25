@@ -8,6 +8,15 @@ namespace DeSwitcher.Patcher
 {
     public partial class App : Application
     {
+        internal static string VersionText
+        {
+            get
+            {
+                var v = typeof(App).Assembly.GetName().Version;
+                return "deSwitcher " + v.Major + "." + v.Minor;
+            }
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetDefaultDllDirectories(uint flags);
 

@@ -9,8 +9,9 @@ namespace DeSwitcher.Runtime
 {
     public static class Bootstrap
     {
-        public const string Version = "1.0.0";
+        public static readonly string Version = typeof(Bootstrap).Assembly.GetName().Version.ToString(3);
         public static string HomeDir { get; private set; }
+        public static string CacheDir { get; private set; }
         public static Shape Shape { get; private set; }
         public static bool GuardReady { get; private set; }
         public static string UnsupportedReason { get; private set; }
@@ -38,6 +39,8 @@ namespace DeSwitcher.Runtime
                 Log.Error(UnsupportedReason);
                 return;
             }
+
+            PrepareCache(game);
 
             Shape = GameShape.Detect(game.Location);
             Log.Info("Game shape: " + Shape);
@@ -68,6 +71,27 @@ namespace DeSwitcher.Runtime
             {
                 UnsupportedReason = "could not install the mod loader";
                 Log.Error("Patch failed: " + (e.InnerException ?? e));
+            }
+        }
+
+        private static void PrepareCache(Assembly game)
+        {
+            string root = Path.Combine(HomeDir, "Cache");
+            string key = game.ManifestModule.ModuleVersionId.ToString("N").Substring(0, 12)
+                + "-" + typeof(Bootstrap).Assembly.ManifestModule.ModuleVersionId.ToString("N").Substring(0, 8);
+            CacheDir = Path.Combine(root, key);
+            try
+            {
+                Directory.CreateDirectory(CacheDir);
+                foreach (string dir in Directory.GetDirectories(root))
+                    if (!string.Equals(Path.GetFileName(dir), key, StringComparison.OrdinalIgnoreCase))
+                        Directory.Delete(dir, true);
+                foreach (string file in Directory.GetFiles(root))
+                    File.Delete(file);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("Cache prune failed: " + e.Message);
             }
         }
 

@@ -18,7 +18,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="deSwitcher 1.0" Style="{StaticResource Dimmed}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="11.5"/>
+                <TextBlock x:Name="VersionLabel" Style="{StaticResource Dimmed}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="11.5"/>
                 <Button Grid.Column="1" x:Name="LangButton" Style="{StaticResource ChromeButton}" Width="54" Click="OnToggleLang">
                     <TextBlock x:Name="LangText" FontFamily="{StaticResource Pixel}" FontSize="9" TextOptions.TextRenderingMode="Aliased"/>
                 </Button>

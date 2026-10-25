@@ -124,6 +124,35 @@ namespace DeSwitcher.Patcher.Logic
             Installed = false;
         }
 
+        public bool PayloadOutdated() =>
+            Differs(Path.Combine(payloadDir, "deSwitcher"), Paths.Home(Game))
+            || Differs(Path.Combine(payloadDir, "Compiler"), Path.Combine(Paths.Home(Game), "Compiler"))
+            || Differs(BootDll, Paths.BootDll(Game));
+
+        public static bool GameRunning()
+        {
+            var running = System.Diagnostics.Process.GetProcessesByName("People Playground");
+            foreach (var p in running)
+                p.Dispose();
+            return running.Length > 0;
+        }
+
+        private static bool Differs(string src, string dst)
+        {
+            if (File.Exists(src))
+            {
+                if (!File.Exists(dst))
+                    return true;
+                var a = new FileInfo(src);
+                var b = new FileInfo(dst);
+                return a.Length != b.Length || !File.ReadAllBytes(src).SequenceEqual(File.ReadAllBytes(dst));
+            }
+            if (!Directory.Exists(src))
+                return false;
+            return Directory.GetFiles(src).Any(f => Differs(f, Path.Combine(dst, Path.GetFileName(f))))
+                || Directory.GetDirectories(src).Any(d => Differs(d, Path.Combine(dst, Path.GetFileName(d))));
+        }
+
         public void SaveState() => State.Save(Paths.State(Game));
 
         public void Dispose()

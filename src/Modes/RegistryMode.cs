@@ -154,7 +154,6 @@ namespace DeSwitcher.Modes
             var catalog = AccessTools.TypeByName("CatalogBehaviour");
             object main = Traverse.Create(catalog).Field("Main").GetValue();
             var apply = AccessTools.Method(catalog, "ApplyModification");
-            var modApi = Traverse.Create(AccessTools.TypeByName("ModAPI"));
 
             foreach (DictionaryEntry pair in modifications)
             {
@@ -166,10 +165,7 @@ namespace DeSwitcher.Modes
                 try
                 {
                     object original = Traverse.Create(mod).Field("OriginalItem").GetValue();
-                    modApi.Property("Metadata").SetValue(gameMeta);
-                    modApi.Field("metaDataIsValid").SetValue(true);
-                    apply.Invoke(main, new[] { mod, info, original });
-                    modApi.Field("metaDataIsValid").SetValue(false);
+                    ModInvoker.WithMetadata(gameMeta, () => apply.Invoke(main, new[] { mod, info, original }));
                 }
                 catch (Exception e)
                 {
@@ -228,18 +224,14 @@ namespace DeSwitcher.Modes
             if (action == null)
                 return;
             object gameMeta = loader.GameMetaForInfo(info);
-            var modApi = Traverse.Create(AccessTools.TypeByName("ModAPI"));
-            modApi.Property("Metadata").SetValue(gameMeta);
-            modApi.Field("metaDataIsValid").SetValue(true);
             try
             {
-                action(instance);
+                ModInvoker.WithMetadata(gameMeta, () => action(instance));
             }
             catch (Exception e)
             {
                 Debug.LogError(e);
             }
-            modApi.Field("metaDataIsValid").SetValue(false);
         }
     }
 

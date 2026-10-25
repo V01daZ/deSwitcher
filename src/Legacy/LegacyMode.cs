@@ -53,7 +53,7 @@ namespace DeSwitcher.Legacy
             string name = meta.Field("Name").GetValue() as string;
             string workshopId = meta.Field("UGCIdentity").GetValue() as string;
             string hash = Safe(() => ModHash.Compute(folder));
-            string cacheDll = Path.Combine(Bootstrap.HomeDir, "Cache", hash + ".dll");
+            string cacheDll = Path.Combine(Bootstrap.CacheDir, hash + ".dll");
 
             object resultObj = null;
             object script = null;
@@ -78,9 +78,15 @@ namespace DeSwitcher.Legacy
             {
                 try
                 {
-                    var args = new object[] { mod, null };
-                    resultObj = tryCompile.Invoke(null, args);
-                    script = args[1];
+                    for (int attempt = 0; ; attempt++)
+                    {
+                        var args = new object[] { mod, null };
+                        resultObj = tryCompile.Invoke(null, args);
+                        script = args[1];
+                        if (attempt >= 20 || !CompilerNotReady(resultObj))
+                            break;
+                        System.Threading.Thread.Sleep(500);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -120,6 +126,17 @@ namespace DeSwitcher.Legacy
 
             __result = MakeTuple(resultObj, script);
             return false;
+        }
+
+        private static bool CompilerNotReady(object result)
+        {
+            var r = Traverse.Create(result);
+            if ((bool)r.Field("Success").GetValue())
+                return false;
+            string errors = r.Field("Errors").GetValue() as string ?? "";
+            return errors.IndexOf("actively refused", StringComparison.OrdinalIgnoreCase) >= 0
+                || errors.IndexOf("No connection could be made", StringComparison.OrdinalIgnoreCase) >= 0
+                || errors.IndexOf("TimeoutException", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static object MakeScript(object mod, string folder, byte[] data)

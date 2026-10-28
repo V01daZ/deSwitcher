@@ -19,6 +19,7 @@ namespace DeSwitcher.Modes
         public object GameMeta;
         public bool Initialised;
         public bool MainDone;
+        public bool OnLoadTried;
         public Sprite Thumbnail;
         public bool ThumbnailResolved;
     }
@@ -45,9 +46,11 @@ namespace DeSwitcher.Modes
             };
         }
 
-        public IEnumerable<LoadedMod> Loaded => mods;
+        private volatile LoadedMod[] all = new LoadedMod[0];
 
-        public IEnumerable<Mod> GetMods() => mods.Select(m => m.Mod);
+        public IEnumerable<LoadedMod> Loaded => all;
+
+        public IEnumerable<Mod> GetMods() => all.Select(m => m.Mod);
 
         public Task<bool> TryLoadAsync(IModSource source, DirectoryInfo directory)
         {
@@ -55,7 +58,7 @@ namespace DeSwitcher.Modes
             if (info == null)
                 return Task.FromResult(false);
 
-            if (mods.Any(m => string.Equals(m.Info.Folder, info.Folder, StringComparison.OrdinalIgnoreCase)))
+            if (all.Any(m => string.Equals(m.Info.Folder, info.Folder, StringComparison.OrdinalIgnoreCase)))
                 return Task.FromResult(false);
 
             if (info.FromWorkshop)
@@ -70,7 +73,7 @@ namespace DeSwitcher.Modes
                 var bad = new Mod(info, this, source, new FileInfo(Path.Combine(info.Folder, "mod.json")));
                 bad.Errors = new[] { "Scripts point outside the mod folder" };
                 info.Active = false;
-                mods.Add(new LoadedMod { Info = info, Assembly = null, Mod = bad });
+                Add(new LoadedMod { Info = info, Assembly = null, Mod = bad });
                 return Task.FromResult(true);
             }
 
@@ -90,16 +93,25 @@ namespace DeSwitcher.Modes
             }
 
             object gameMeta = result.Assembly != null ? BuildGameMeta(Path.Combine(info.Folder, "mod.json"), info.Active) : null;
-            mods.Add(new LoadedMod { Info = info, Assembly = result.Assembly, Mod = mod, GameMeta = gameMeta });
+            Add(new LoadedMod { Info = info, Assembly = result.Assembly, Mod = mod, GameMeta = gameMeta });
             Log.Info("Loaded mod " + info.Name + " -> " + (result.Verdict != null ? result.Verdict.Status.ToString() : "error"));
             return Task.FromResult(true);
         }
 
-        public bool HasModWithId(string id) => mods.Any(m => m.Info.Identifier == id);
+        private void Add(LoadedMod lm)
+        {
+            lock (mods)
+            {
+                mods.Add(lm);
+                all = mods.ToArray();
+            }
+        }
+
+        public bool HasModWithId(string id) => all.Any(m => m.Info.Identifier == id);
 
         public bool TryGetModById(string id, out Mod mod)
         {
-            var found = mods.FirstOrDefault(m => m.Info.Identifier == id);
+            var found = all.FirstOrDefault(m => m.Info.Identifier == id);
             mod = found?.Mod;
             return found != null;
         }
@@ -175,16 +187,75 @@ namespace DeSwitcher.Modes
         {
         }
 
+        private static readonly Color ErrorColor = new Color(1f, 0.24f, 0.35f);
+
         public void OnCreateModEntryUi(Mod mod, ModEntryUiBehaviour component)
         {
+            var lm = Find(mod);
+            if (lm == null || component == null)
+                return;
+            if (mod.HasErrors)
+            {
+                component.DescriptionText.text = string.Join("\n", mod.Errors);
+                component.DescriptionText.color = ErrorColor;
+                component.StatusText.text = "ERROR";
+                component.StatusText.color = ErrorColor;
+            }
+            if (component.SelectButton != null)
+            {
+                component.SelectButton.onClick.RemoveAllListeners();
+                component.SelectButton.onClick.AddListener(() => ShowDetails(lm, component));
+            }
+            foreach (var button in component.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+            {
+                bool broken = false;
+                for (int i = 0; i < button.onClick.GetPersistentEventCount(); i++)
+                {
+                    if (button.onClick.GetPersistentTarget(i) == null)
+                    {
+                        button.onClick.SetPersistentListenerState(i, UnityEngine.Events.UnityEventCallState.Off);
+                        broken = true;
+                    }
+                }
+                if (!broken)
+                    continue;
+                button.onClick.RemoveAllListeners();
+                if (!mod.HasErrors)
+                    button.onClick.AddListener(() =>
+                    {
+                        mod.Loader.Toggle(mod);
+                        component.UpdateUi();
+                    });
+            }
+        }
+
+        private static TMPro.TextMeshProUGUI detailsText;
+
+        private static void ShowDetails(LoadedMod lm, Component from)
+        {
+            var info = lm.Info;
+            string text = "<align=left><size=150%><b>" + Utils.EscapeRichText(info.Name) + "</b></size>\n"
+                + "<alpha=#90>" + Utils.EscapeRichText("by " + string.Join(", ", info.Authors) + "  -  v" + info.Version + "  -  " + info.GameVersion) + "<alpha=#FF>\n\n"
+                + Utils.EscapeRichText(info.Summary ?? "");
+            if (lm.Mod.HasErrors)
+                text += "\n\n<color=#FF3D5A>" + Utils.EscapeRichText(string.Join("\n", lm.Mod.Errors)) + "</color>";
+            if (detailsText == null)
+                detailsText = from.transform.root.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true)
+                    .FirstOrDefault(t => t.text != null && t.text.Contains("No mod selected"));
+            if (detailsText != null)
+                detailsText.text = text;
         }
 
         public void Dispose()
         {
-            foreach (var lm in mods)
+            foreach (var lm in all)
                 if (lm.Initialised)
                     ModInvoker.Invoke(lm.Assembly, lm.GameMeta, lm.Info.EntryPoint, "OnUnload");
-            mods.Clear();
+            lock (mods)
+            {
+                mods.Clear();
+                all = new LoadedMod[0];
+            }
         }
 
         public void InvokeOnLoad(LoadedMod lm)
@@ -226,10 +297,10 @@ namespace DeSwitcher.Modes
                 Traverse.Create(lm.GameMeta).Field("Active").SetValue(lm.Info.Active);
         }
 
-        private LoadedMod Find(Mod mod) => mods.FirstOrDefault(m => m.Mod == mod);
+        private LoadedMod Find(Mod mod) => all.FirstOrDefault(m => m.Mod == mod);
 
-        public object InfoForGameMeta(object gameMeta) => mods.FirstOrDefault(m => ReferenceEquals(m.GameMeta, gameMeta))?.Info;
+        public object InfoForGameMeta(object gameMeta) => all.FirstOrDefault(m => ReferenceEquals(m.GameMeta, gameMeta))?.Info;
 
-        public object GameMetaForInfo(object info) => mods.FirstOrDefault(m => ReferenceEquals(m.Info, info))?.GameMeta;
+        public object GameMetaForInfo(object info) => all.FirstOrDefault(m => ReferenceEquals(m.Info, info))?.GameMeta;
     }
 }

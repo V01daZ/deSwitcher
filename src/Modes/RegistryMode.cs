@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using DeSwitcher.Runtime;
 using HarmonyLib;
 using UnityEngine;
@@ -21,8 +23,6 @@ namespace DeSwitcher.Modes
             WireCompat();
 
             var loadStep = AccessTools.TypeByName("ModLoadStep");
-            harmony.Patch(AccessTools.Method(loadStep, "Awake"),
-                postfix: new HarmonyMethod(typeof(RegistryMode), nameof(AfterLoadStepAwake)));
             harmony.Patch(AccessTools.Method(loadStep, "Load"),
                 prefix: new HarmonyMethod(typeof(RegistryMode), nameof(BeforeLoadStep)));
 
@@ -34,13 +34,63 @@ namespace DeSwitcher.Modes
             if (perfInst != null)
                 harmony.Patch(perfInst, postfix: new HarmonyMethod(typeof(RegistryMode), nameof(AfterInstantiate)));
 
+            ModLoaderRegistry.AddLoader(loader);
+            Log.Info("CSharpModLoader registered");
+
             new GameObject("deSwitcherInit").AddComponent<ModInitDriver>();
+            Preload();
+        }
+
+        internal static int PreloadDone;
+        internal static int PreloadTotal;
+        internal static volatile bool Preloading;
+        private static bool preloadStarted;
+
+        internal static int LoadedCount => loader != null ? loader.Loaded.Count() : 0;
+
+        private static void Preload()
+        {
+            var dir = new DirectoryInfo("./Mods");
+            if (!dir.Exists)
+                return;
+            var folders = dir.GetDirectories()
+                .Where(d => File.Exists(Path.Combine(d.FullName, "mod.json")))
+                .ToList();
+            preloadStarted = true;
+            if (folders.Count == 0)
+                return;
+            var source = new ModFolderSource(dir);
+            PreloadTotal = folders.Count;
+            Preloading = true;
+            new Thread(() =>
+            {
+                foreach (var folder in folders)
+                {
+                    try
+                    {
+                        loader.TryLoadAsync(source, folder).Wait();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error("Preload " + folder.Name + " failed: " + e);
+                    }
+                    Interlocked.Increment(ref PreloadDone);
+                }
+                Preloading = false;
+                Log.Info("Preloaded " + folders.Count + " mods");
+            }) { IsBackground = true }.Start();
         }
 
         internal static void DriveInit()
         {
             if (loader == null)
                 return;
+            MirrorLegacy();
+            foreach (var lm in loader.Loaded.Where(m => m.Info.Active && m.Assembly != null && !m.OnLoadTried).ToList())
+            {
+                lm.OnLoadTried = true;
+                loader.InvokeOnLoad(lm);
+            }
             var main = Traverse.Create(AccessTools.TypeByName("CatalogBehaviour")).Field("Main").GetValue() as UnityEngine.Object;
             if (main == null)
                 return;
@@ -50,6 +100,47 @@ namespace DeSwitcher.Modes
                 loader.InvokeMain(lm);
                 lm.MainDone = true;
             }
+        }
+
+        private static MethodInfo legacyListChange;
+
+        private static void MirrorLegacy()
+        {
+            if (loader == null)
+                return;
+            bool changed = false;
+            foreach (var lm in loader.Loaded)
+            {
+                var meta = lm.GameMeta as ModMetaData;
+                if (meta == null)
+                    continue;
+                if (!ModLoader.LoadedMods.Contains(meta))
+                {
+                    ModLoader.LoadedMods.Add(meta);
+                    changed = true;
+                }
+                if (meta.Active != lm.Info.Active)
+                {
+                    if (meta.Active)
+                        loader.Enable(lm.Mod);
+                    else
+                        loader.Disable(lm.Mod);
+                    changed = true;
+                }
+            }
+            if (!changed)
+                return;
+            if (legacyListChange == null)
+                legacyListChange = AccessTools.Method(typeof(ModLoader), "InvokeModListChange");
+            try
+            {
+                legacyListChange?.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Legacy mod list change failed: " + (e.InnerException ?? e));
+            }
+            ModLoaderRegistry.OnModLoaded.Invoke();
         }
 
         public static void AfterInstantiate(object e, GameObject __result)
@@ -83,16 +174,9 @@ namespace DeSwitcher.Modes
             invokeItemSpawned.Invoke(null, new object[] { instance, args });
         }
 
-        private static void AfterLoadStepAwake()
-        {
-            var registry = AccessTools.TypeByName("ModLoaderRegistry");
-            AccessTools.Method(registry, "AddLoader").Invoke(null, new object[] { loader });
-            Log.Info("CSharpModLoader registered");
-        }
-
         private static bool BeforeLoadStep(object __instance, ref IEnumerator __result)
         {
-            if (loader != null && loader.Loaded.Any())
+            if (preloadStarted || (loader != null && loader.Loaded.Any()))
             {
                 Traverse.Create(__instance).Property("RequestingLoad").SetValue(false);
                 __result = Empty();
@@ -242,9 +326,30 @@ namespace DeSwitcher.Modes
             DontDestroyOnLoad(gameObject);
         }
 
+        private int announced;
+        private float lastAnnounce;
+        private GUIStyle style;
+
         private void Update()
         {
             RegistryMode.DriveInit();
+            int count = RegistryMode.LoadedCount;
+            if (count != announced && (!RegistryMode.Preloading || Time.unscaledTime - lastAnnounce > 1f))
+            {
+                announced = count;
+                lastAnnounce = Time.unscaledTime;
+                ModLoaderRegistry.OnModLoaded.Invoke();
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (!RegistryMode.Preloading)
+                return;
+            if (style == null)
+                style = new GUIStyle(GUI.skin.label) { fontSize = 14, normal = { textColor = new Color(0.24f, 0.88f, 1f) } };
+            GUI.Label(new Rect(12, Screen.height - 34, 600, 24),
+                "deSwitcher: " + (Application.systemLanguage == SystemLanguage.Russian ?"загрузка модов " : "loading mods ") + RegistryMode.PreloadDone + " / " + RegistryMode.PreloadTotal, style);
         }
     }
 }

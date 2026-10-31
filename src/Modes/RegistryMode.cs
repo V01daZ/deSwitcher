@@ -53,12 +53,19 @@ namespace DeSwitcher.Modes
             var dir = new DirectoryInfo("./Mods");
             if (!dir.Exists)
                 return;
-            var folders = dir.GetDirectories()
-                .Where(d => File.Exists(Path.Combine(d.FullName, "mod.json")))
+            var folders = DeSwitcher.Core.SafeDir.EnumerateFiles(dir.FullName, "mod.json")
+                .Select(Path.GetDirectoryName)
+                .Where(d => d.IndexOf(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar, StringComparison.Ordinal) < 0
+                    && !d.EndsWith(Path.DirectorySeparatorChar + "bin", StringComparison.Ordinal))
+                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .Select(d => new DirectoryInfo(d))
                 .ToList();
             preloadStarted = true;
             if (folders.Count == 0)
+            {
+                Log.Info("Preload: no mod.json found in " + dir.FullName);
                 return;
+            }
             var source = new ModFolderSource(dir);
             PreloadTotal = folders.Count;
             Preloading = true;
@@ -81,6 +88,10 @@ namespace DeSwitcher.Modes
             }) { IsBackground = true }.Start();
         }
 
+        private static readonly FieldInfo catalogMain = AccessTools.Field(AccessTools.TypeByName("CatalogBehaviour"), "Main");
+
+        private static object CatalogMain() => catalogMain?.GetValue(null);
+
         internal static void DriveInit()
         {
             if (loader == null)
@@ -91,7 +102,7 @@ namespace DeSwitcher.Modes
                 lm.OnLoadTried = true;
                 loader.InvokeOnLoad(lm);
             }
-            var main = Traverse.Create(AccessTools.TypeByName("CatalogBehaviour")).Field("Main").GetValue() as UnityEngine.Object;
+            var main = CatalogMain() as UnityEngine.Object;
             if (main == null)
                 return;
             foreach (var lm in loader.Loaded.Where(m => m.Info.Active && m.Assembly != null && !m.MainDone).ToList())
@@ -217,7 +228,7 @@ namespace DeSwitcher.Modes
 
         private static void SyncCategories()
         {
-            object main = Traverse.Create(AccessTools.TypeByName("CatalogBehaviour")).Field("Main").GetValue();
+            object main = CatalogMain();
             var modded = main != null ? Traverse.Create(main).Field("ModdedCatalog").GetValue() as IList : null;
             if (modded == null)
                 return;
@@ -298,8 +309,7 @@ namespace DeSwitcher.Modes
 
         private static void PerformSpawn(string field, object asset, GameObject instance)
         {
-            var catalog = AccessTools.TypeByName("CatalogBehaviour");
-            object main = Traverse.Create(catalog).Field("Main").GetValue();
+            object main = CatalogMain();
             var map = Traverse.Create(main).Field(field).GetValue() as IDictionary;
             object info = Traverse.Create(asset).Field("RelevantModMetadata").GetValue();
             if (map == null || info == null || !map.Contains(asset))
@@ -330,9 +340,15 @@ namespace DeSwitcher.Modes
         private float lastAnnounce;
         private GUIStyle style;
 
+        private float nextDrive;
+
         private void Update()
         {
-            RegistryMode.DriveInit();
+            if (Time.unscaledTime >= nextDrive)
+            {
+                nextDrive = Time.unscaledTime + 0.25f;
+                RegistryMode.DriveInit();
+            }
             int count = RegistryMode.LoadedCount;
             if (count != announced && (!RegistryMode.Preloading || Time.unscaledTime - lastAnnounce > 1f))
             {

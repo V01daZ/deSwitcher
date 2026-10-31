@@ -171,7 +171,6 @@ namespace DeSwitcher.Patcher.Views
             Color fg, bg;
             switch (status)
             {
-                case ModStatus.FromSite: text = Loc.T("tag.site"); fg = Hex("#3DE0FF"); break;
                 case ModStatus.Trusted: text = Loc.T("tag.trusted"); fg = Hex("#3DE0FF"); break;
                 case ModStatus.Suspicious: text = Loc.T("tag.suspicious"); fg = Hex("#FFB23D"); break;
                 case ModStatus.Dangerous: text = Loc.T("tag.dangerous"); fg = Hex("#FF3D5A"); break;

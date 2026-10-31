@@ -65,11 +65,12 @@ namespace DeSwitcher.Compiler
 
             var parse = new CSharpParseOptions(LanguageVersion.Latest);
             var trees = new List<SyntaxTree>();
+            var missing = new List<string>();
             foreach (string source in request.Sources)
             {
                 if (!File.Exists(source))
                 {
-                    reply.Errors.Add("Missing script: " + Path.GetFileName(source));
+                    missing.Add("Missing script: " + Path.GetFileName(source));
                     continue;
                 }
                 var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(source), parse, source, Encoding.UTF8);
@@ -77,8 +78,11 @@ namespace DeSwitcher.Compiler
                     tree = tree.WithRootAndOptions(new CompatRewriter(request.Rewrites).Visit(tree.GetRoot()), parse);
                 trees.Add(tree);
             }
-            if (reply.Errors.Count > 0)
+            if (trees.Count == 0)
+            {
+                reply.Errors.AddRange(missing);
                 return reply;
+            }
 
             var references = (request.References ?? new string[0]).Where(File.Exists).Select(Reference).ToList();
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,

@@ -50,7 +50,9 @@ namespace DeSwitcher.Runtime
                 hash = SafeHash(modFolder);
             }
 
-            IReadOnlyList<Finding> findings = assembly != null ? CodeScanner.Scan(assembly) : new Finding[0];
+            var findings = new List<Finding>(assembly != null ? CodeScanner.Scan(assembly) : new Finding[0]);
+            if (!Guard.Lists.Catalog.Mods.ContainsKey(hash) && !Guard.State.TrustedHashes.Contains(hash))
+                findings.AddRange(SafeBundledScan(modFolder));
             result.Verdict = Verdict.Evaluate(hash, workshopId, modName, findings, Guard.Lists, Guard.State);
 
             if (!result.Verdict.MayLoad)
@@ -66,6 +68,18 @@ namespace DeSwitcher.Runtime
                 result.Loaded = true;
             }
             return result;
+        }
+
+        private static IReadOnlyList<Finding> SafeBundledScan(string folder)
+        {
+            try
+            {
+                return CodeScanner.ScanBundled(folder);
+            }
+            catch (Exception e)
+            {
+                return new[] { new Finding("unreadable", Severity.Dangerous, "bundled dll scan failed: " + e.Message) };
+            }
         }
 
         private static string SafeHash(string folder)

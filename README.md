@@ -26,7 +26,7 @@ This builds the projects in Release and writes the launcher to `out\`: `deSwitch
 
 Run `out\deSwitcher.exe` and press "Enable mods". The exe needs the adjacent `payload\` folder. If the game is in Program Files, Windows prompts for admin to patch it.
 
-On the beta (Registry) build, mods start compiling only after you enter a map. Wait for compilation to finish, then restart the map to apply them.
+On the beta (Registry) build, mods compile in the main menu (progress in the bottom-left corner). If you enter a map before it finishes, re-enter the map to apply the late mods. Re-press "Enable mods" after every deSwitcher or game update.
 
 ## Layout
 

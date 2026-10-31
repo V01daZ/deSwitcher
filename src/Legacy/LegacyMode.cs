@@ -113,7 +113,18 @@ namespace DeSwitcher.Legacy
 
             if (data != null)
             {
-                var findings = CodeScanner.Scan(data);
+                var findings = CodeScanner.Scan(data).ToList();
+                if (!Guard.Lists.Catalog.Mods.ContainsKey(hash) && !Guard.State.TrustedHashes.Contains(hash))
+                {
+                    try
+                    {
+                        findings.AddRange(CodeScanner.ScanBundled(folder));
+                    }
+                    catch (Exception e)
+                    {
+                        findings.Add(new Finding("unreadable", Severity.Dangerous, "bundled dll scan failed: " + e.Message));
+                    }
+                }
                 var verdict = Verdict.Evaluate(hash, workshopId, name, findings, Guard.Lists, Guard.State);
                 if (!verdict.MayLoad)
                 {

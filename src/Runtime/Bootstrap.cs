@@ -119,6 +119,7 @@ namespace DeSwitcher.Runtime
                         || name == "Ceras.dll"
                         || name == "ModModels.dll";
                 })
+                .Select(f => Path.GetFileName(f) == "Assembly-CSharp.dll" && File.Exists(f + ".deswitcher.bak") ? f + ".deswitcher.bak" : f)
                 .Concat(new[] { Path.Combine(HomeDir, "deSwitcher.Shim.dll") })
                 .ToArray();
         }

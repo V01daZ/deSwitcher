@@ -29,7 +29,6 @@ namespace DeSwitcher.Patcher.Logic
             ["nav.mods"] = ("Моды", "Mods"),
             ["nav.quarantine"] = ("Карантин", "Quarantine"),
             ["nav.settings"] = ("Настройки", "Settings"),
-            ["tag.site"] = ("с сайта", "from site"),
             ["tag.clean"] = ("чисто", "clean"),
             ["tag.trusted"] = ("доверенный", "trusted"),
             ["tag.suspicious"] = ("подозрительный", "suspicious"),

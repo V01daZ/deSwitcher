@@ -64,6 +64,8 @@ namespace DeSwitcher.Patcher.Logic
                     findings.Add(new Finding("compile-failed", Severity.Suspicious, mod.Name));
                 }
             }
+            if (!mod.FromWorkshop && !lists.Catalog.Mods.ContainsKey(hash) && !state.TrustedHashes.Contains(hash))
+                findings.AddRange(CodeScanner.ScanBundled(mod.Folder));
 
             var verdict = Verdict.Evaluate(hash, mod.WorkshopId, mod.Name, findings, lists, state);
             return new ModScan { Info = mod, Verdict = verdict };
@@ -73,10 +75,10 @@ namespace DeSwitcher.Patcher.Logic
         {
             try
             {
-                string[] sources = mod.Scripts
-                    .Select(s => Path.GetFullPath(Path.Combine(mod.Folder, s)))
+                string[] sources = DeSwitcher.Core.SafeDir.ScriptEntries(mod.Scripts)
+                    .Select(s => DeSwitcher.Core.SafeDir.ResolveScript(mod.Folder, s))
                     .ToArray();
-                if (sources.Any(s => !DeSwitcher.Core.SafeDir.Confines(mod.Folder, s)))
+                if (sources.Any(s => s == null))
                     return null;
                 if (File.Exists(output))
                     return File.ReadAllBytes(output);
@@ -87,6 +89,7 @@ namespace DeSwitcher.Patcher.Logic
                     ["AssemblyName"] = string.IsNullOrEmpty(mod.AssemblyName) ? mod.Name : mod.AssemblyName,
                     ["Sources"] = new JArray(sources),
                     ["References"] = new JArray(refs),
+                    ["Rewrites"] = JObject.FromObject(DeSwitcher.Core.CompatRewrites.Create()),
                     ["Output"] = output,
                 };
                 EnsureStarted();

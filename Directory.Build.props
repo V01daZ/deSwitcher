@@ -4,7 +4,7 @@
     <Company>Switch Studio</Company>
     <Product>deSwitcher</Product>
     <Copyright>Switch Studio, deswitchstudio.com</Copyright>
-    <Version>2.0.2</Version>
+    <Version>2.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>

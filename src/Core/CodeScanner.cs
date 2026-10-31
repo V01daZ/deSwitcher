@@ -9,6 +9,31 @@ namespace DeSwitcher.Core
 {
     public static class CodeScanner
     {
+        public static IReadOnlyList<Finding> ScanBundled(string modFolder)
+        {
+            var findings = new List<Finding>();
+            string root = Path.GetFullPath(modFolder);
+            foreach (string dll in SafeDir.EnumerateFiles(root, "*.dll"))
+            {
+                string rel = dll.Substring(root.Length).TrimStart('\\', '/');
+                if (ModHash.IsExcluded(rel))
+                    continue;
+                byte[] bytes;
+                try
+                {
+                    bytes = File.ReadAllBytes(dll);
+                }
+                catch (Exception e)
+                {
+                    findings.Add(new Finding("unreadable", Severity.Dangerous, rel + ": " + e.GetType().Name));
+                    continue;
+                }
+                foreach (var f in Scan(bytes))
+                    findings.Add(new Finding(f.RuleId, f.Severity, rel + ": " + f.Detail));
+            }
+            return findings;
+        }
+
         public static IReadOnlyList<Finding> Scan(byte[] assembly)
         {
             var findings = new List<Finding>();

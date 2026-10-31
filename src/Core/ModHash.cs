@@ -8,8 +8,8 @@ namespace DeSwitcher.Core
 {
     public static class ModHash
     {
-        private static readonly string[] ExcludedDirs = { "bin", "obj" };
-        private static readonly string[] ExcludedExtensions = { ".dll", ".pdb", ".cache" };
+        private static readonly string[] ExcludedDirs = { "bin", "obj", "logs" };
+        private static readonly string[] ExcludedExtensions = { ".pdb", ".cache", ".log", ".cfg" };
         private static readonly string[] ExcludedNames = { "thumbs.db", "desktop.ini", ".ds_store" };
 
         public static string Compute(string modFolder)
@@ -26,7 +26,7 @@ namespace DeSwitcher.Core
                 foreach (var f in files)
                 {
                     byte[] path = Encoding.UTF8.GetBytes(f.Rel);
-                    byte[] content = File.ReadAllBytes(f.Full);
+                    byte[] content = f.Rel == "mod.json" ? CanonicalMeta(File.ReadAllBytes(f.Full)) : File.ReadAllBytes(f.Full);
                     Feed(sha, path);
                     Feed(sha, new byte[] { 0 });
                     Feed(sha, BitConverter.IsLittleEndian ? BitConverter.GetBytes((long)content.Length) : BitConverter.GetBytes((long)content.Length).Reverse().ToArray());
@@ -46,6 +46,22 @@ namespace DeSwitcher.Core
                     return true;
             string name = parts[parts.Length - 1];
             return ExcludedNames.Contains(name) || ExcludedExtensions.Any(e => name.EndsWith(e, StringComparison.Ordinal));
+        }
+
+        private static byte[] CanonicalMeta(byte[] raw)
+        {
+            try
+            {
+                var j = Newtonsoft.Json.Linq.JObject.Parse(Encoding.UTF8.GetString(raw).TrimStart('\uFEFF'));
+                j.Remove("Active");
+                foreach (var empty in j.Properties().Where(p => p.Value.Type == Newtonsoft.Json.Linq.JTokenType.Null).ToList())
+                    empty.Remove();
+                return Encoding.UTF8.GetBytes(j.ToString(Newtonsoft.Json.Formatting.None));
+            }
+            catch
+            {
+                return raw;
+            }
         }
 
         internal static string ToHex(byte[] bytes)

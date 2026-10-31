@@ -45,6 +45,9 @@ namespace DeSwitcher.Core
                 result.Blocklist = ParseBlocklist(block);
             if (catalog != null)
                 result.Catalog = ParseCatalog(catalog);
+            foreach (var entry in BuiltInCatalog.Mods)
+                if (!result.Catalog.Mods.ContainsKey(entry.Key))
+                    result.Catalog.Mods[entry.Key] = entry.Value;
             return result;
         }
 

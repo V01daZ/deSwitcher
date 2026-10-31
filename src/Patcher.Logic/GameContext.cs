@@ -88,6 +88,7 @@ namespace DeSwitcher.Patcher.Logic
                         || n == "System.Core.dll" || n == "Newtonsoft.Json.dll" || n == "Ceras.dll"
                         || n == "ModModels.dll";
                 })
+                .Select(f => Path.GetFileName(f) == "Assembly-CSharp.dll" ? Hook.OriginalGameDll(managed) : f)
                 .ToArray();
         }
 

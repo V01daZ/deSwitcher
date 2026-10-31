@@ -38,12 +38,7 @@ namespace DeSwitcher.Modes
             Instance = this;
             this.game = game;
             references = Bootstrap.ReferenceLocations(game);
-            rewrites = new Dictionary<string, string>
-            {
-                ["CatalogBehaviour.PerformBeforeSpawn"] = "DeSwitcherCompat",
-                ["CatalogBehaviour.PerformAfterSpawn"] = "DeSwitcherCompat",
-                ["CatalogBehaviour.PerformMod"] = "DeSwitcherCompat",
-            };
+            rewrites = DeSwitcher.Core.CompatRewrites.Create();
         }
 
         private volatile LoadedMod[] all = new LoadedMod[0];
@@ -64,11 +59,11 @@ namespace DeSwitcher.Modes
             if (info.FromWorkshop)
                 return Task.FromResult(false);
 
-            string[] sources = info.Scripts
-                .Select(s => Path.GetFullPath(Path.Combine(info.Folder, s)))
+            string[] sources = DeSwitcher.Core.SafeDir.ScriptEntries(info.Scripts)
+                .Select(s => DeSwitcher.Core.SafeDir.ResolveScript(info.Folder, s))
                 .ToArray();
 
-            if (sources.Any(s => !DeSwitcher.Core.SafeDir.Confines(info.Folder, s)))
+            if (sources.Any(s => s == null))
             {
                 var bad = new Mod(info, this, source, new FileInfo(Path.Combine(info.Folder, "mod.json")));
                 bad.Errors = new[] { "Scripts point outside the mod folder" };
